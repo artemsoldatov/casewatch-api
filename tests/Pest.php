@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Counterparty;
 use App\Models\Organization;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,4 +26,17 @@ function makeUser(Organization $org, string $role = 'analyst'): User
         'organization_id' => $org->id,
         'role' => $role,
     ]);
+}
+
+function makeCounterparty(Organization $org, array $attrs = []): Counterparty
+{
+    return Counterparty::create(array_merge([
+        'organization_id' => $org->id,
+        'external_ref' => 'cp-'.Str::random(6),
+        'name' => 'Counterparty '.Str::random(4),
+        'kind' => 'entity',
+        'country' => 'US',
+        'chain' => 'ethereum',
+        'wallet_address' => '0x'.Str::random(40),
+    ], $attrs));
 }

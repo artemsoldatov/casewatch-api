@@ -2,8 +2,10 @@
 
 use App\Models\Counterparty;
 use App\Models\Organization;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Tests\TestCase;
@@ -39,4 +41,18 @@ function makeCounterparty(Organization $org, array $attrs = []): Counterparty
         'chain' => 'ethereum',
         'wallet_address' => '0x'.Str::random(40),
     ], $attrs));
+}
+
+function makeTx(Organization $org, ?Counterparty $from, ?Counterparty $to, int $amountCents, Carbon $at): Transaction
+{
+    return Transaction::create([
+        'organization_id' => $org->id,
+        'chain' => 'ethereum',
+        'tx_hash' => '0x'.Str::random(64),
+        'from_counterparty_id' => $from?->id,
+        'to_counterparty_id' => $to?->id,
+        'amount_cents' => $amountCents,
+        'currency' => 'USD',
+        'occurred_at' => $at,
+    ]);
 }

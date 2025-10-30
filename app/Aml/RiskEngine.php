@@ -29,6 +29,7 @@ class RiskEngine
     {
         $findings = array_filter([
             $this->structuring($incoming->merge($outgoing)),
+            $this->rapidMovement($incoming, $outgoing),
         ]);
 
         if ($findings === []) {
@@ -63,6 +64,38 @@ class RiskEngine
                     "{$window->count()} transfers just under the reporting threshold within 7 days",
                     $this->evidence($window),
                     45,
+                );
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  Collection<int, Transaction>  $incoming
+     * @param  Collection<int, Transaction>  $outgoing
+     */
+    private function rapidMovement(Collection $incoming, Collection $outgoing): ?Finding
+    {
+        $in = (int) $incoming->sum(fn (Transaction $t): int => $t->amount_cents);
+        $out = (int) $outgoing->sum(fn (Transaction $t): int => $t->amount_cents);
+        if ($in === 0 || $out < (int) ($in * 0.8)) {
+            return null;
+        }
+
+        // an inflow quickly followed by an outflow is pass-through behaviour
+        foreach ($incoming as $rx) {
+            $fast = $outgoing->first(
+                fn (Transaction $t) => $t->occurred_at->gte($rx->occurred_at)
+                    && $t->occurred_at->diffInHours($rx->occurred_at, true) <= self::RAPID_WINDOW_HOURS
+            );
+            if ($fast !== null) {
+                return new Finding(
+                    'RAPID_MOVEMENT',
+                    'Rapid in-and-out movement',
+                    'Funds moved out within 24h of arriving, ~'.(int) round($out / $in * 100).'% passed through',
+                    $this->evidence(collect([$rx, $fast])),
+                    35,
                 );
             }
         }

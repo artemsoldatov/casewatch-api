@@ -43,3 +43,16 @@ it('does not flag structuring below three transfers', function (): void {
 
     expect($this->engine->evaluate($cp, incoming($cp), outgoing($cp)))->toBeNull();
 });
+
+it('flags rapid in-and-out movement', function (): void {
+    $cp = makeCounterparty($this->org);
+    $src = makeCounterparty($this->org);
+    $dst = makeCounterparty($this->org);
+    makeTx($this->org, $src, $cp, 5_000_000, $this->base->copy());
+    makeTx($this->org, $cp, $dst, 4_500_000, $this->base->copy()->addHours(2));
+
+    $spec = $this->engine->evaluate($cp, incoming($cp), outgoing($cp));
+
+    expect($spec)->not->toBeNull()
+        ->and($spec->type())->toBe('RAPID_MOVEMENT');
+});

@@ -30,6 +30,7 @@ class RiskEngine
         $findings = array_filter([
             $this->structuring($incoming->merge($outgoing)),
             $this->rapidMovement($incoming, $outgoing),
+            $this->layering($incoming, $outgoing),
         ]);
 
         if ($findings === []) {
@@ -98,6 +99,27 @@ class RiskEngine
                     35,
                 );
             }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  Collection<int, Transaction>  $incoming
+     * @param  Collection<int, Transaction>  $outgoing
+     */
+    private function layering(Collection $incoming, Collection $outgoing): ?Finding
+    {
+        $sources = $incoming->pluck('from_counterparty_id')->filter()->unique();
+        $dests = $outgoing->pluck('to_counterparty_id')->filter()->unique();
+        if ($sources->count() >= 2 && $dests->count() >= 2) {
+            return new Finding(
+                'LAYERING',
+                'Intermediary layering',
+                "Funds fan in from {$sources->count()} sources and out to {$dests->count()} destinations",
+                $this->evidence($incoming->merge($outgoing)),
+                40,
+            );
         }
 
         return null;

@@ -56,3 +56,20 @@ it('flags rapid in-and-out movement', function (): void {
     expect($spec)->not->toBeNull()
         ->and($spec->type())->toBe('RAPID_MOVEMENT');
 });
+
+it('flags layering across multiple sources and destinations', function (): void {
+    $cp = makeCounterparty($this->org);
+    foreach (range(0, 2) as $i) {
+        makeTx($this->org, makeCounterparty($this->org), $cp, 2_000_000, $this->base->copy()->addHours($i));
+    }
+    foreach (range(0, 2) as $i) {
+        makeTx($this->org, $cp, makeCounterparty($this->org), 1_700_000, $this->base->copy()->addHours(4 + $i));
+    }
+
+    $spec = $this->engine->evaluate($cp, incoming($cp), outgoing($cp));
+
+    // layering (40) dominates the co-occurring rapid-movement finding (35)
+    expect($spec)->not->toBeNull()
+        ->and($spec->type())->toBe('LAYERING')
+        ->and($spec->severity())->toBe('HIGH');
+});

@@ -21,6 +21,11 @@ class RiskEngine
 
     private const RAPID_WINDOW_HOURS = 24;
 
+    private const LARGE_TX = 500_000; // $5,000
+
+    /** @var list<string> */
+    private const HIGH_RISK_COUNTRIES = ['IR', 'KP', 'SY', 'RU', 'MM'];
+
     /**
      * @param  Collection<int, Transaction>  $incoming
      * @param  Collection<int, Transaction>  $outgoing
@@ -31,6 +36,7 @@ class RiskEngine
             $this->structuring($incoming->merge($outgoing)),
             $this->rapidMovement($incoming, $outgoing),
             $this->layering($incoming, $outgoing),
+            $this->highRiskJurisdiction($cp, $incoming->merge($outgoing)),
         ]);
 
         if ($findings === []) {
@@ -123,6 +129,28 @@ class RiskEngine
         }
 
         return null;
+    }
+
+    /**
+     * @param  Collection<int, Transaction>  $txns
+     */
+    private function highRiskJurisdiction(Counterparty $cp, Collection $txns): ?Finding
+    {
+        if (! in_array($cp->country, self::HIGH_RISK_COUNTRIES, true)) {
+            return null;
+        }
+        $large = $txns->filter(fn (Transaction $t) => $t->amount_cents >= self::LARGE_TX);
+        if ($large->isEmpty()) {
+            return null;
+        }
+
+        return new Finding(
+            'HIGH_RISK_JURISDICTION',
+            'High-risk jurisdiction exposure',
+            "Counterparty is registered in {$cp->country}, a high-risk jurisdiction",
+            $this->evidence($large),
+            30,
+        );
     }
 
     /**

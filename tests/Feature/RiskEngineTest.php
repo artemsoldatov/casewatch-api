@@ -73,3 +73,14 @@ it('flags layering across multiple sources and destinations', function (): void 
         ->and($spec->type())->toBe('LAYERING')
         ->and($spec->severity())->toBe('HIGH');
 });
+
+it('flags exposure to a high-risk jurisdiction', function (): void {
+    $cp = makeCounterparty($this->org, ['country' => 'IR']);
+    $src = makeCounterparty($this->org);
+    makeTx($this->org, $src, $cp, 800_000, $this->base->copy());
+
+    $spec = $this->engine->evaluate($cp, incoming($cp), outgoing($cp));
+
+    expect($spec)->not->toBeNull()
+        ->and($spec->type())->toBe('HIGH_RISK_JURISDICTION');
+});

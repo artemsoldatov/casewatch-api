@@ -84,3 +84,11 @@ it('flags exposure to a high-risk jurisdiction', function (): void {
     expect($spec)->not->toBeNull()
         ->and($spec->type())->toBe('HIGH_RISK_JURISDICTION');
 });
+
+it('leaves ordinary activity alone', function (): void {
+    $cp = makeCounterparty($this->org);
+    $src = makeCounterparty($this->org);
+    makeTx($this->org, $src, $cp, 1_200_000, $this->base->copy());
+
+    expect($this->engine->evaluate($cp, incoming($cp), outgoing($cp)))->toBeNull();
+});

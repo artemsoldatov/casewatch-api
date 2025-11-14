@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Aml\Assessment;
 use App\Models\Alert;
 use App\Models\AuditEvent;
 use App\Models\User;
@@ -38,6 +39,11 @@ class AlertController extends Controller
             'alert' => $alert,
             'audit' => $this->auditFor($alert),
         ]);
+    }
+
+    public function assessment(Request $request, string $id): JsonResponse
+    {
+        return response()->json(Assessment::for($this->scopedAlert($request, $id)));
     }
 
     public function audit(Request $request, string $id): JsonResponse

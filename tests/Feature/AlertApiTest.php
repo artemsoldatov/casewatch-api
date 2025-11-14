@@ -51,3 +51,14 @@ it('shows an alert with its audit trail', function (): void {
         ->assertJsonPath('alert.id', $alert->id)
         ->assertJsonCount(1, 'audit');
 });
+
+it('returns a deterministic assessment', function (): void {
+    $org = makeOrg();
+    $alert = makeAlert($org, ['score' => 75, 'severity' => 'HIGH']);
+    Sanctum::actingAs(makeUser($org));
+
+    $this->getJson("/api/alerts/{$alert->id}/assessment")
+        ->assertOk()
+        ->assertJsonPath('recommendation', 'escalate')
+        ->assertJsonPath('score', 75);
+});

@@ -12,5 +12,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     Route::get('/alerts', [AlertController::class, 'index']);
     Route::get('/alerts/{id}', [AlertController::class, 'show']);
+    Route::get('/alerts/{id}/assessment', [AlertController::class, 'assessment']);
     Route::get('/alerts/{id}/audit', [AlertController::class, 'audit']);
 });

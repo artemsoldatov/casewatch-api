@@ -62,3 +62,20 @@ it('returns a deterministic assessment', function (): void {
         ->assertJsonPath('recommendation', 'escalate')
         ->assertJsonPath('score', 75);
 });
+
+it('returns the counterparty transaction timeline with direction', function (): void {
+    $org = makeOrg();
+    $alert = makeAlert($org);
+    $cp = $alert->counterparty;
+    $peer = makeCounterparty($org);
+    $base = now()->subDay();
+    makeTx($org, $peer, $cp, 2_000_000, $base->copy());          // in
+    makeTx($org, $cp, $peer, 1_500_000, $base->copy()->addHour()); // out
+    Sanctum::actingAs(makeUser($org));
+
+    $res = $this->getJson("/api/alerts/{$alert->id}/transactions")->assertOk();
+
+    expect($res->json('data'))->toHaveCount(2)
+        ->and($res->json('data.0.direction'))->toBe('in')
+        ->and($res->json('data.1.direction'))->toBe('out');
+});

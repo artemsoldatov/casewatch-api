@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Aml\Assessment;
 use App\Models\Alert;
 use App\Models\AuditEvent;
+use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -49,6 +50,35 @@ class AlertController extends Controller
     public function audit(Request $request, string $id): JsonResponse
     {
         return response()->json($this->auditFor($this->scopedAlert($request, $id)));
+    }
+
+    /**
+     * The counterparty's transaction timeline, direction relative to them.
+     */
+    public function transactions(Request $request, string $id): JsonResponse
+    {
+        $alert = $this->scopedAlert($request, $id);
+        $cpId = $alert->counterparty_id;
+
+        $rows = Transaction::query()
+            ->where('organization_id', $alert->organization_id)
+            ->where(function ($q) use ($cpId): void {
+                $q->where('from_counterparty_id', $cpId)->orWhere('to_counterparty_id', $cpId);
+            })
+            ->orderBy('occurred_at')
+            ->get()
+            ->map(fn (Transaction $t): array => [
+                'id' => $t->id,
+                'direction' => $t->to_counterparty_id === $cpId ? 'in' : 'out',
+                'chain' => $t->chain,
+                'tx_hash' => $t->tx_hash,
+                'amount_cents' => $t->amount_cents,
+                'currency' => $t->currency,
+                'occurred_at' => $t->occurred_at->toIso8601String(),
+            ])
+            ->values();
+
+        return response()->json(['data' => $rows]);
     }
 
     private function orgId(Request $request): string

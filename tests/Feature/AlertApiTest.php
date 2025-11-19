@@ -79,3 +79,13 @@ it('returns the counterparty transaction timeline with direction', function (): 
         ->and($res->json('data.0.direction'))->toBe('in')
         ->and($res->json('data.1.direction'))->toBe('out');
 });
+
+it('drafts a SAR', function (): void {
+    $org = makeOrg();
+    $alert = makeAlert($org);
+    Sanctum::actingAs(makeUser($org));
+
+    $this->getJson("/api/alerts/{$alert->id}/sar")
+        ->assertOk()
+        ->assertJsonStructure(['subject', 'alert', 'narrative', 'disclaimer']);
+});

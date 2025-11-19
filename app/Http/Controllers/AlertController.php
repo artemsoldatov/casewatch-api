@@ -7,12 +7,17 @@ use App\Models\Alert;
 use App\Models\AuditEvent;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\SarService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
 class AlertController extends Controller
 {
+    public function __construct(
+        private readonly SarService $sar,
+    ) {}
+
     public function index(Request $request): JsonResponse
     {
         $query = Alert::query()
@@ -45,6 +50,11 @@ class AlertController extends Controller
     public function assessment(Request $request, string $id): JsonResponse
     {
         return response()->json(Assessment::for($this->scopedAlert($request, $id)));
+    }
+
+    public function sar(Request $request, string $id): JsonResponse
+    {
+        return response()->json($this->sar->draft($this->scopedAlert($request, $id)));
     }
 
     public function audit(Request $request, string $id): JsonResponse

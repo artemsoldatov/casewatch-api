@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $type
  * @property string $severity
  * @property int $score
+ * @property string $status
+ * @property string|null $assigned_to
  * @property list<array<string, mixed>> $rationale
  * @property string $dedup_key
  */
@@ -21,8 +23,8 @@ class Alert extends Model
     use HasUuids;
 
     protected $fillable = [
-        'organization_id', 'counterparty_id', 'type', 'severity', 'score',
-        'rationale', 'dedup_key', 'opened_at',
+        'organization_id', 'counterparty_id', 'type', 'severity', 'score', 'status',
+        'assigned_to', 'rationale', 'dedup_key', 'opened_at',
     ];
 
     protected $casts = [

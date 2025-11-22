@@ -3,18 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Aml\Assessment;
+use App\Http\Requests\DispositionRequest;
 use App\Models\Alert;
 use App\Models\AuditEvent;
 use App\Models\Transaction;
 use App\Models\User;
+use App\Services\DispositionService;
 use App\Services\SarService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Symfony\Component\HttpFoundation\Response;
 
 class AlertController extends Controller
 {
     public function __construct(
+        private readonly DispositionService $dispositions,
         private readonly SarService $sar,
     ) {}
 
@@ -89,6 +93,28 @@ class AlertController extends Controller
             ->values();
 
         return response()->json(['data' => $rows]);
+    }
+
+    public function disposition(DispositionRequest $request, string $id): JsonResponse
+    {
+        $alert = $this->scopedAlert($request, $id);
+        /** @var User $actor */
+        $actor = $request->user();
+        $action = $request->string('action')->toString();
+
+        // clearing or escalating a case is a lead-only decision
+        if (in_array($action, ['clear', 'escalate'], true) && ! $actor->isLead()) {
+            return response()->json(['message' => 'Lead role required'], Response::HTTP_FORBIDDEN);
+        }
+
+        /** @var string|null $note */
+        $note = $request->input('note');
+        /** @var string|null $assignee */
+        $assignee = $request->input('assignee');
+
+        $alert = $this->dispositions->apply($alert, $actor, $action, $note, $assignee);
+
+        return response()->json(['alert' => $alert]);
     }
 
     private function orgId(Request $request): string

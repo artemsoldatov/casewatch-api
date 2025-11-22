@@ -89,3 +89,30 @@ it('drafts a SAR', function (): void {
         ->assertOk()
         ->assertJsonStructure(['subject', 'alert', 'narrative', 'disclaimer']);
 });
+
+it('lets an analyst assign but not clear an alert', function (): void {
+    $org = makeOrg();
+    $alert = makeAlert($org);
+    Sanctum::actingAs(makeUser($org, 'analyst'));
+
+    $this->postJson("/api/alerts/{$alert->id}/disposition", ['action' => 'clear'])
+        ->assertForbidden();
+
+    $this->postJson("/api/alerts/{$alert->id}/disposition", ['action' => 'assign', 'assignee' => 'Alex'])
+        ->assertOk();
+
+    expect($alert->fresh()->status)->toBe('IN_REVIEW')
+        ->and($alert->fresh()->assigned_to)->toBe('Alex');
+});
+
+it('lets a lead clear an alert and writes an audit event', function (): void {
+    $org = makeOrg();
+    $alert = makeAlert($org);
+    Sanctum::actingAs(makeUser($org, 'lead'));
+
+    $this->postJson("/api/alerts/{$alert->id}/disposition", ['action' => 'clear', 'note' => 'benign'])
+        ->assertOk();
+
+    expect($alert->fresh()->status)->toBe('CLEARED');
+    $this->assertDatabaseHas('audit_events', ['alert_id' => $alert->id, 'action' => 'alert.clear']);
+});

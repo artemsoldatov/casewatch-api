@@ -30,3 +30,16 @@ POST /api/alerts/{id}/disposition  { action: clear|escalate|assign, note?, assig
 ```
 
 Clear and escalate require the lead role; analysts get a 403. Every disposition writes an audit event in the same transaction as the state change.
+
+## Running it
+
+```bash
+docker compose up -d              # Postgres 16 on :55437
+composer install
+cp .env.example .env && php artisan key:generate
+php artisan migrate --seed        # seeds one demo tenant with alerts
+
+php artisan serve                 # http://127.0.0.1:8000
+```
+
+Demo logins (password: password): lead@casewatch.test, analyst@casewatch.test.

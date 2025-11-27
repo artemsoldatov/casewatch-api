@@ -48,6 +48,9 @@ class DatabaseSeeder extends Seeder
 
         $this->structuringCase();
         $this->rapidMovementCase();
+        $this->layeringCase();
+        $this->highRiskCase();
+        $this->cleanCase();
 
         $opened = $generator->run($this->org->id);
         $this->command->info("Opened {$opened} alerts for {$this->org->name}.");
@@ -69,6 +72,33 @@ class DatabaseSeeder extends Seeder
         $dst = $this->counterparty('dst-rapid', 'Exit Wallet', 'individual', 'US', 'tron');
         $this->tx($src, $cp, 5_000_000, $this->base->copy());
         $this->tx($cp, $dst, 4_500_000, $this->base->copy()->addHours(2));
+    }
+
+    private function layeringCase(): void
+    {
+        $cp = $this->counterparty('layer-01', 'Mesh Intermediary', 'entity', 'US', 'ethereum');
+        foreach (['a', 'b', 'c'] as $i => $tag) {
+            $src = $this->counterparty("layer-src-{$tag}", "Source {$tag}", 'individual', 'US', 'ethereum');
+            $this->tx($src, $cp, 2_000_000, $this->base->copy()->addHours($i));
+        }
+        foreach (['x', 'y', 'z'] as $i => $tag) {
+            $dst = $this->counterparty("layer-dst-{$tag}", "Dest {$tag}", 'individual', 'US', 'ethereum');
+            $this->tx($cp, $dst, 1_700_000, $this->base->copy()->addHours(4 + $i));
+        }
+    }
+
+    private function highRiskCase(): void
+    {
+        $cp = $this->counterparty('hrj-01', 'Sanctioned Trade Co', 'entity', 'IR', 'bitcoin');
+        $src = $this->counterparty('src-hrj', 'Broker Ltd', 'exchange', 'AE', 'bitcoin');
+        $this->tx($src, $cp, 800_000, $this->base->copy());
+    }
+
+    private function cleanCase(): void
+    {
+        $cp = $this->counterparty('clean-01', 'Acme Payroll', 'entity', 'US', 'ethereum');
+        $src = $this->counterparty('src-clean', 'Client Corp', 'entity', 'US', 'ethereum');
+        $this->tx($src, $cp, 1_200_000, $this->base->copy());
     }
 
     private function counterparty(string $ref, string $name, string $kind, string $country, string $chain): Counterparty

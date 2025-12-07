@@ -43,3 +43,14 @@ php artisan serve                 # http://127.0.0.1:8000
 ```
 
 Demo logins (password: password): lead@casewatch.test, analyst@casewatch.test.
+
+## Quality gates
+
+```bash
+composer ci        # pint --test + phpstan (level max) + pest
+composer lint      # pint --test
+composer analyse   # phpstan level max
+composer test      # pest
+```
+
+Tests run against an in-memory SQLite database, no services needed; the app itself runs on Postgres. PHPStan is set to level max with Larastan.
